@@ -13,10 +13,10 @@
 # limitations under the License.
 
 locals {
-  members = compact([
-    try(google_logging_project_sink.project_log_sink[0].writer_identity, null),
-    try(google_logging_organization_sink.organization_log_sink[0].writer_identity, null)
-  ])
+  members = [
+    try(google_logging_organization_sink.organization_log_sink[0].writer_identity,
+        google_logging_project_sink.project_log_sink[0].writer_identity)
+  ]
 }
 
 resource "google_pubsub_topic_iam_binding" "input_sub_publisher" {
