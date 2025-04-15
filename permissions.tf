@@ -12,13 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+locals {
+  members = compact([
+    try(google_logging_project_sink.project_log_sink[0].writer_identity, null),
+    try(google_logging_organization_sink.organization_log_sink[0].writer_identity, null)
+  ])
+}
+
 resource "google_pubsub_topic_iam_binding" "input_sub_publisher" {
+  count  = var.organization_id != null ? 1 : 0
+
   project = google_pubsub_topic.dataflow_input_pubsub_topic.project
   topic   = google_pubsub_topic.dataflow_input_pubsub_topic.name
   role    = "roles/pubsub.publisher"
-  members = [
-    google_logging_project_sink.project_log_sink.writer_identity
-  ]
+  members = local.members
+}
+
+resource "google_pubsub_topic_iam_binding" "input_sub_publisher_org" {
+  count  = var.organization_id == null ? 1 : 0
+
+  project = google_pubsub_topic.dataflow_input_pubsub_topic.project
+  topic   = google_pubsub_topic.dataflow_input_pubsub_topic.name
+  role    = "roles/pubsub.publisher"
+  members = local.members
 }
 
 resource "google_pubsub_subscription_iam_binding" "input_sub_subscriber" {

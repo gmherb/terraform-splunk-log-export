@@ -111,6 +111,8 @@ resource "google_pubsub_subscription" "dataflow_input_pubsub_subscription" {
 }
 
 resource "google_logging_project_sink" "project_log_sink" {
+  count = var.organization_id == null ? 1 : 0
+
   project     = var.project
   name        = local.project_log_sink_name
   destination = "pubsub.googleapis.com/projects/${var.project}/topics/${google_pubsub_topic.dataflow_input_pubsub_topic.name}"
@@ -125,11 +127,19 @@ resource "google_logging_project_sink" "project_log_sink" {
   unique_writer_identity = true
 }
 
-# resource "google_logging_organization_sink" "organization_log_sink" {
-#   name = local.organization_log_sink_name
-#   org_id = "ORGANIZATION_ID"
-#   destination = "pubsub.googleapis.com/projects/${var.project}/topics/${google_pubsub_topic.dataflow_input_pubsub_topic.name}"
-#   filter = var.log_filter
-#
-#   include_children = "true"
-# }
+resource "google_logging_organization_sink" "organization_log_sink" {
+  count = var.organization_id != null ? 1 : 0
+
+  name = local.organization_log_sink_name
+  org_id = var.organization_id
+  destination = "pubsub.googleapis.com/projects/${var.project}/topics/${google_pubsub_topic.dataflow_input_pubsub_topic.name}"
+  filter = var.log_filter
+
+  exclusions {
+    name        = "exclude_dataflow"
+    description = "Exclude dataflow logs to not create an infinite loop"
+    filter      = "resource.type=\"dataflow_step\" AND resource.labels.job_name = \"${local.dataflow_main_job_name}\""
+  }
+
+  include_children = "true"
+}

@@ -28,6 +28,12 @@ variable "create_network" {
   type        = bool
 }
 
+variable "organization_id" {
+  description = "Organization ID to deploy organization sink instead of project sink"
+  type = string
+  default = null
+}
+
 variable "network" {
   description = "Network to deploy into"
   type        = string
